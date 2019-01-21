@@ -1,2 +1,3 @@
 # dengue
-Bayesian parameter estimation using stan
+Bayesian parameter estimation using an ODE model
+Analysis is done using Stan
