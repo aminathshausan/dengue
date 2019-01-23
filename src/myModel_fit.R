@@ -19,19 +19,22 @@ rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
 Sys.setenv(LOCAL_CPPFLAGS = '-march=native')
 #--------------------------------------------------
+#set working directory to src folder
+#first set wd as the main "dengue" project and then use the following
+setwd(paste0(getwd(), "/src")) #set working directory to src folder
 
 #--------load patient data and extract observed viremia and meaured time------------------------------
 #Use a function to load all patient data and get required patient data
-LoadP1Data <- function(RData, env = new.env()){
+Load_Patient_Data <- function(RData, env = new.env()){
   load(RData, env)
-  p_data =  get("p1_data",pos=env)
+  p_data =  get("p1_data",pos=env) #change p1 to which patient data to select
   return(p_data)
 }
-p1_data <- LoadP1Data('patient_data.RData') #returns required patient data
-rm(LoadP1Data) # remove the temporary environment to free up memory
+p_data <- Load_Patient_Data('../data/patient_data.RData') #returns required patient data
+rm(Load_Patient_Data) # remove the temporary environment to free up memory
 
-sample_time  =  p1_data$DOI  # viremia measurement times 
-y_obs =  p1_data$viremia     #viremia measurements
+sample_time  =  p_data$DOI  # viremia measurement times 
+y_obs =  p_data$viremia     #viremia measurements
 
 
 #---------Estimating delta, std, gamma, kappa, eta, omega, beta------------
@@ -51,14 +54,14 @@ stan_data_beta <- list(n_obs = 5,                 #number of observed measuremen
 test <- stan("myModel-fit_upto_beta.stan",
              data = stan_data_beta,
              chains = 1, iter = 100, 
-             control = list(adapt_delta = 0.9, max_treedepth = 10)) 
+             control = list(adapt_delta = 0.8, max_treedepth = 10)) 
 fit_model = stan(fit = test,
                  data = stan_data_beta,
                  chains = 4,     #number of Markov Chains
                  warmup = 1000, #number of warmup iterations per chain
                  iter = 2500,   #total number of iterations per chain
                  refresh = 1000,
-                 control = list(adapt_delta = 0.99, max_treedepth = 10))
+                 control = list(adapt_delta = 0.8, max_treedepth = 10))
 save.image(file = "p1_upto_beta.RData")
 #-------------------------------------------------------
 

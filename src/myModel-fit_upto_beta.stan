@@ -69,12 +69,17 @@ transformed data {
 
 
 parameters{ //the following parameters are to be estimated
-        real<lower =0> delta;
-        real<lower = 0> std;
-        real<lower = 0> gamma;
-        real<lower = 0> kappa;
-        //real<lower = 0> eta;
+        //real<lower =0> delta;
+       // real<lower = 0> std;
+       // real<lower = 0> gamma;
+       // real<lower = 0> kappa;
+       //real<lower = 0> eta;
         //real<lower = 0> omega;
+       // real<lower =0> beta;
+        real<lower =0, upper =1> delta_raw; //this gives delta_raw ~uniform(0,1) distribution
+        real<lower =0, upper = 1> std_raw;
+        real<lower =0, upper =1> gamma_raw;
+        real<lower =0, upper =1> kappa_raw;
         real eta_raw;
         real omega_raw;
         real beta_raw; 
@@ -83,12 +88,20 @@ parameters{ //the following parameters are to be estimated
 transformed parameters {
               real y[n_obs,6];  //output from ODE solver
               real y_new[n_obs, 6]; //vector to hold machine precision solutions from ODE 
+              real<lower = 0> delta;
+              real<lower = 0> std;
+              real<lower = 0> gamma;
+              real<lower =0> kappa;
               real<lower = 0> beta;
               real<lower = 0> eta;
               real<lower = 0> omega;
               
               //reparametrise parameters
-              eta   = exp(9.9 + 1*eta_raw);       
+              delta = -(1/0.2)*log(delta_raw);  //this computes delta ~ Exponential(rate=0.2)
+              std = -(1/1.0)*log(std_raw);
+              gamma = -(1/0.2)*log(gamma_raw);
+              kappa = -(1/0.2)*log(kappa_raw);
+              eta   = exp(9.9 + 1*eta_raw);     //this computes log(eta) ~ normal(9.9, 1) hence eta ~ lognormal(9.9,1)    
               omega = exp(9.2 + 1*omega_raw);
               beta  = exp(-24 + 1*beta_raw);
               
@@ -115,15 +128,17 @@ transformed parameters {
 
 model {
       //priors
-        delta ~ exponential(0.2);
-        std ~ exponential(1);
-        gamma ~ exponential(0.2);
-        kappa ~ exponential(0.2);
+       // delta ~ exponential(0.2);
+       // std ~ exponential(1);
+       // gamma ~ exponential(0.2);
+       // kappa ~ exponential(0.2);
         //eta ~ lognormal(9.9, 1); // no divergent transitions with sd = 0.5 and all Rhats <1.1
         //omega ~ lognormal(9.2, 1); 
+        //beta ~ lognormal(-24,1);
         eta_raw ~ normal(0,1);
         omega_raw ~ normal(0, 1);
-        beta_raw ~ normal(0, 1);
+         beta_raw ~ normal(0, 1); //original: beta_raw ~normal(0,1)
+        //beta ~ exponential(10); //rate =1 and 5 10 gave error in ODE
         
         //evaluate likelihood conditionally. run_estimation =0 switch off likelihood. run_estimation =1 switch on likelihood
         if(run_estimation==1){
