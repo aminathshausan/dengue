@@ -71,13 +71,14 @@ transformed data {
 
 
 parameters{ //the following parameters are to be estimated
-        real<lower =0>  delta;//delta is patient specific
+        real<lower =0>  delta[J];//delta is patient specific
         real<lower = 0> std;
         real<lower = 0> gamma;
         real<lower = 0> kappa; //patient specific
         real eta_raw;
         real omega_raw;
         real beta_raw; 
+        real<lower =0> lambda_delta; //hyper parameter of delta
 }
 
 transformed parameters {
@@ -95,7 +96,7 @@ transformed parameters {
               for (j in 1:J){
               
                   real params[6];
-                  params[1] = delta;
+                  params[1] = delta[j];
                   params[2] = gamma;
                   params[3] = kappa;
                   params[4] = eta;
@@ -116,7 +117,9 @@ transformed parameters {
 
 model {
       //priors
-        delta ~ exponential(0.2);
+      //  delta ~ exponential(0.2);
+      lambda_delta ~ normal(0, 0.3); //95%CI for lambda_delta in [0, 0.6]
+      delta ~ exponential(lambda_delta); 
         std ~ exponential(1);
         gamma ~ exponential(0.2);
         kappa ~ exponential(0.2);
@@ -142,7 +145,7 @@ generated quantities {
        
        for (j in 1:J){
          real params[6];
-         params[1] = delta;
+         params[1] = delta[j];
          params[2] = gamma;
          params[3] = kappa;
          params[4] = eta;
