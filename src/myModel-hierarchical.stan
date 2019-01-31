@@ -72,7 +72,7 @@ transformed data {
 
 parameters{ //the following parameters are to be estimated
         real<lower =0>  delta[J];//delta is patient specific
-        real<lower = 0> std;
+        real<lower = 0> std[J]; //
         real<lower = 0> gamma;
         real<lower = 0> kappa[J]; //patient specific
         real eta_raw;
@@ -80,6 +80,7 @@ parameters{ //the following parameters are to be estimated
         real beta_raw; 
         real<lower =0> lambda_delta; //hyper parameter of delta
         real<lower =0> lambda_kappa; //hyper parameter of kappa
+        real<lower =0> lambda_std; //hyper parameter of std
 }
 
 transformed parameters {
@@ -120,10 +121,11 @@ model {
       //hyper priors
       lambda_delta ~ normal(0, 0.3); //95%CI for lambda_delta in [0, 0.6]
       lambda_kappa ~ normal(0, 0.3); //95%CI for lambda_kappa in [0, 0.6]
+      lambda_std ~ normal(0, 1); //95%CI for lambda_kappa in [0, 0.6]
       
       //priors
-       delta ~ exponential(lambda_delta); //  original delta ~ exponential(0.2);
-        std ~ exponential(1);
+        delta ~ exponential(lambda_delta); //  original delta ~ exponential(0.2);
+        std ~ exponential(lambda_std);     //  original std ~ exponential(1);
         gamma ~ exponential(0.2);
         kappa ~ exponential(lambda_kappa); //  original kappa ~ exponential(0.2);
         eta_raw ~ normal(0,1);
@@ -134,7 +136,7 @@ model {
         if(run_estimation==1){
           //for each patient, compute likelihood 
           for (j in 1:J){
-             y_hat[,j] ~ lognormal(log(y_new[,j]), std);   
+             y_hat[,j] ~ lognormal(log(y_new[,j]), std[j]);   
           }
      //  y_hat ~ lognormal(log(y_new[,5]), std);   
         }
@@ -160,7 +162,7 @@ generated quantities {
          
          //compute predictions using measurement varaiability (std)
          for (t in 1:n_pred) {
-         y_ppc[t,j] = lognormal_rng(log(y_pred[, 5][t]+ 10*1e-6), std);
+         y_ppc[t,j] = lognormal_rng(log(y_pred[, 5][t]+ 10*1e-6), std[j]);
         
       }
      
