@@ -33,18 +33,19 @@ pairs(fit_model, pars = c("delta","std","gamma", "eta","kappa", "eta", "omega", 
 #compute credible interval and plot them for "fake_fit"
 params <- extract(fit_model)
 
-cred_median = apply(params$y_ppc, 2, median)
-cred_low =  apply(params$y_ppc, 2, quantile, probs = c(0.025))
-cred_high =  apply(params$y_ppc, 2, quantile, probs = c(0.975))
+cred_median = apply(params$y_ppc[, ,2], 2, median)
+cred_low =  apply(params$y_ppc[, ,2], 2, quantile, probs = c(0.025))
+cred_high =  apply(params$y_ppc[, ,2], 2, quantile, probs = c(0.975))
 
 cred_median_ode = apply(params$y_pred[, , 5], 2, median)
 cred_low_ode=  apply(params$y_pred[, , 5], 2, quantile, probs = c(0.025))
 cred_high_ode =  apply(params$y_pred[, , 5], 2, quantile, probs = c(0.975))
 
 
-df_sample =  data.frame(sample_time,  y_obs) #observed data
+df_sample =  data.frame(sample_time[,2],  y_obs[,2]) #observed data
 colnames(df_sample) = c("Time", "Viremia")
-df_fit = data.frame(cred_low, cred_median, cred_high, cred_low_ode, cred_median_ode, cred_high_ode, Time = stan_data_beta$t_pred) #predicted credible interval
+#df_fit = data.frame(cred_low, cred_median, cred_high, cred_low_ode, cred_median_ode, cred_high_ode, Time = stan_data_beta$t_pred) #predicted credible interval
+df_fit = data.frame(cred_low, cred_median, cred_high,  Time = stan_data_beta$t_pred[,2]) #predicted credible interval
 
 
 #plot  posterior predictive interval for fake data
@@ -54,9 +55,9 @@ ggplot(df_sample, aes(x=Time, y=log10(Viremia))) +
   geom_line(data = df_fit, aes(x=Time, y=log10(cred_median)), color = "red") +
   geom_line(data = df_fit, aes(x=Time, y=log10(cred_high)), color = "red", linetype=3) +
   geom_line(data = df_fit, aes(x=Time, y=log10(cred_low)), color = "red", linetype=3) +
-  geom_line(data = df_fit, aes(x=Time, y=log10(cred_median_ode)), color = "blue") +
-  geom_line(data = df_fit, aes(x=Time, y=log10(cred_high_ode)), color = "blue", linetype=3) +
-  geom_line(data = df_fit, aes(x=Time, y=log10(cred_low_ode)), color = "blue", linetype=3) +
+ # geom_line(data = df_fit, aes(x=Time, y=log10(cred_median_ode)), color = "blue") +
+#  geom_line(data = df_fit, aes(x=Time, y=log10(cred_high_ode)), color = "blue", linetype=3) +
+#  geom_line(data = df_fit, aes(x=Time, y=log10(cred_low_ode)), color = "blue", linetype=3) +
   # Aesthetics
   labs(x = "Day of illness", y = "log10(Viremia)") +
   scale_x_continuous(limits=c(-3, 8)) #+
