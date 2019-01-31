@@ -74,11 +74,12 @@ parameters{ //the following parameters are to be estimated
         real<lower =0>  delta[J];//delta is patient specific
         real<lower = 0> std;
         real<lower = 0> gamma;
-        real<lower = 0> kappa; //patient specific
+        real<lower = 0> kappa[J]; //patient specific
         real eta_raw;
         real omega_raw;
         real beta_raw; 
         real<lower =0> lambda_delta; //hyper parameter of delta
+        real<lower =0> lambda_kappa; //hyper parameter of kappa
 }
 
 transformed parameters {
@@ -98,7 +99,7 @@ transformed parameters {
                   real params[6];
                   params[1] = delta[j];
                   params[2] = gamma;
-                  params[3] = kappa;
+                  params[3] = kappa[j];
                   params[4] = eta;
                   params[5] = omega;
                   params[6] = beta;
@@ -116,16 +117,18 @@ transformed parameters {
 }
 
 model {
-      //priors
-      //  delta ~ exponential(0.2);
+      //hyper priors
       lambda_delta ~ normal(0, 0.3); //95%CI for lambda_delta in [0, 0.6]
-      delta ~ exponential(lambda_delta); 
+      lambda_kappa ~ normal(0, 0.3); //95%CI for lambda_kappa in [0, 0.6]
+      
+      //priors
+       delta ~ exponential(lambda_delta); //  original delta ~ exponential(0.2);
         std ~ exponential(1);
         gamma ~ exponential(0.2);
-        kappa ~ exponential(0.2);
+        kappa ~ exponential(lambda_kappa); //  original kappa ~ exponential(0.2);
         eta_raw ~ normal(0,1);
         omega_raw ~ normal(0, 1);
-         beta_raw ~ normal(0, 1); //original: beta_raw ~normal(0,1)
+        beta_raw ~ normal(0, 1); //original: beta_raw ~normal(0,1)
         
         //evaluate likelihood conditionally. run_estimation =0 switch off likelihood. run_estimation =1 switch on likelihood
         if(run_estimation==1){
@@ -147,7 +150,7 @@ generated quantities {
          real params[6];
          params[1] = delta[j];
          params[2] = gamma;
-         params[3] = kappa;
+         params[3] = kappa[j];
          params[4] = eta;
          params[5] = omega;
          params[6] = beta;
