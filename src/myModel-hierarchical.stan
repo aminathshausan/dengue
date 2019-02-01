@@ -71,16 +71,18 @@ transformed data {
 
 
 parameters{ //the following parameters are to be estimated
-        real<lower =0>  delta[J];//delta is patient specific
-        real<lower = 0> std; // making std as patient specific made R session to abort
+        real<lower =0>  delta[J];      //delta is patient specific
+        real<lower =0>  delta_raw[J];  //hyper prior for each delta
+        real<lower = 0> std;           // making std as patient specific made R session to abort
         real<lower = 0> gamma;
-        real<lower = 0> kappa[J]; //patient specific
+        real<lower = 0> kappa[J];     //patient specific
+        real<lower = 0> kappa_raw[J]; //hyper prior for each kappa
         real eta_raw;
         real omega_raw;
         real beta_raw; 
-        real<lower =0> lambda_delta; //hyper parameter of delta
-        real<lower =0> lambda_kappa; //hyper parameter of kappa
-      //  real<lower =0> lambda_std; //hyper parameter of std
+        real<lower =0> lambda_delta; //population parameter of delta
+        real<lower =0> lambda_kappa; //population parameter of kappa
+      //  real<lower =0> lambda_std; //population parameter of std
 }
 
 transformed parameters {
@@ -118,7 +120,7 @@ transformed parameters {
 }
 
 model {
-      //hyper priors 
+      //population parameters
       //with normal hyper priors for delta and kappa, it took about 43 mins with 2 patients data and many div. transitions
   //    lambda_delta ~ normal(0, 0.3); //95%CI for lambda_delta in [0, 0.6] 
   //    lambda_kappa ~ normal(0, 0.3); //95%CI for lambda_kappa in [0, 0.6]
@@ -127,6 +129,11 @@ model {
       
       lambda_delta ~ exponential(0.2); 
       lambda_kappa ~ exponential(0.2); 
+      
+      //hyper priors 
+      delta_raw ~ exponential(lambda_delta); 
+      kappa_raw ~ exponential(lambda_kappa);
+      
       //priors
         delta ~ exponential(lambda_delta); //  original delta ~ exponential(0.2);
         std ~ exponential(1);
