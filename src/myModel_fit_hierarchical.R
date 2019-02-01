@@ -2,7 +2,7 @@
 #' title: "my proposed model"
 #' author: "Aminath Shausan"
 #' date: "December 20, 2018"
-#' This R code is used to estimate parameters upto beta using "myModel-fit_upto_beta.stan"
+#' This R code is used to estimate parameters upto beta using "myModel-hierarchical.stan"
 #'  parameters estimated are delta, std, gamma, kappa, eta, omega, beta
 #'  ---------------
 #clear history 
@@ -24,13 +24,17 @@ Sys.setenv(LOCAL_CPPFLAGS = '-march=native')
 setwd(paste0(getwd(), "/src")) #set working directory to src folder
 
 #--------load patient data and extract observed viremia and meaured time------------------------------
+
+
+
+#-----------------------------------------------------------------------
 #Use a function to load all patient data and get required patient data
 Load_Patient_Data <- function(RData, env = new.env()){
   load(RData, env)
-  p_data =  get("p2_data", pos=env) #change p1 to which patient data to select
+  p_data =  get("p1_data", pos=env) #change p1 to which patient data to select
   return(p_data)
 }
-p2_data <- Load_Patient_Data('../data/patient_data.RData') #returns required patient data
+p1_data <- Load_Patient_Data('../data/patient_data.RData') #returns required patient data
 rm(Load_Patient_Data) # remove the temporary environment to free up memory
 
 #create a matrix of viremia measurements 
@@ -69,7 +73,7 @@ fit_model = stan(fit = test,
                  refresh = 100,
                  control = list(adapt_delta = 0.8, max_treedepth = 10))
 
-save.image(file = "p1_upto_beta.RData")
+save.image(file = '../results/p1_to_p2_exponential.RData')
 #-------------------------------------------------------
 
 

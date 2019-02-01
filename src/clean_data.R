@@ -27,15 +27,16 @@ dataset <- read.csv("../data/daily viremia levels.csv")
 #filter DENV1 data only 
 DENV1_data <- filter(dataset, Serotype == "DENV1")
 
-#plot viral load for each subject without facet_wrap text
+#plot viral load for each subject 
 qplot(
   DOI,
   log10(viremia),
-  data = DENV1_data, color = viremia_sign,
+  data = DENV1_data, shape = viremia_sign, 
   group = StudyNo,
   geom = c('point'),
   xlab = 'Day of illness',
-  ylab = 'Viremia (log10 - copies/ml)'
+  ylab = 'Viremia (log10 - copies/ml)',
+  show.legend = FALSE
 ) + 
   facet_wrap(~ StudyNo) + 
   theme(
@@ -43,7 +44,7 @@ qplot(
     strip.text.x = element_blank()
   )
 
-#Extract each patient data from "DENV1_data" set
+#Extract each patient data from "DENV1_data" set (use this for individual fits)
 subjects <- c(603, 604, 605, 607, 610, 615, 616, 
               618, 622, 623, 624, 627, 631, 632, 
               633, 635, 637, 639, 646, 647, 650, 
@@ -63,4 +64,42 @@ for (i in 1:length(subjects)) {
 }
 
 #save extracted patient data
-save.image(file = "patient_data.RData")
+save.image(file = '../data/patient_data.RData')
+#########################################
+#extract viremia and DOI measurements from each subject (three subjects with 4 observations are removed from analysis)
+#cluster subjects into two clusters 
+#cl1 = linear profile. (=48 subjects)
+subjects_cl1 <- c(603, 604,  607, 610, 615, 616, 
+                  623, 627,  632, 637, 651,  654,
+                  656, 658,   662, 663, 667, 668, 
+                  673, 676,  686,  690, 695,  706, 
+                  708, 711,  724, 806,  812, 
+                  813,  818, 823, 826, 829,  833,  
+                  836,   845, 846, 852,   859,865, 
+                  872, 874, 875, 877, 879, 883, 888) 
+viremia_cl1 <- matrix(data =NA, ncol =length(subjects_cl1), nrow = 5);
+times_cl1 <- matrix(data =NA, ncol =length(subjects_cl1), nrow = 5);
+
+for (i in 1:length(subjects_cl1) ) {
+  viremia_cl1[,i] <- filter(DENV1_data, StudyNo == subjects_cl1[i]) %>% select(viremia)  %>% unlist
+  times_cl1[,i] <- filter(DENV1_data, StudyNo == subjects_cl1[i]) %>% select(DOI)  %>% unlist
+}
+
+save.image(file = '../data/cluster1_data.RData')
+#cl2 = nonlinear profile (=27 subjects)
+subjects_cl2 <- c(605, 618, 622,  624,  631, 
+                  633,  639, 646, 647, 650, 
+                  653,  659, 660, 669, 687, 702,   
+                  710,  716, 817, 834,  837, 
+                  840,  849, 850, 851,  855, 857) 
+
+
+
+viremia_cl2 <- matrix(data =NA, ncol =length(subjects_cl2), nrow = 5);
+times_cl2 <- matrix(data =NA, ncol =length(subjects_cl2), nrow = 5);
+
+for (i in 1:length(subjects_cl2) ) {
+  viremia_cl2[,i] <- filter(DENV1_data, StudyNo == subjects_cl2[i]) %>% select(viremia)  %>% unlist
+  times_cl2[,i] <- filter(DENV1_data, StudyNo == subjects_cl2[i]) %>% select(DOI)  %>% unlist
+}
+save.image(file = '../data/cluster2_data.RData')

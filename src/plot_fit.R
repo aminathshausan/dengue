@@ -44,7 +44,7 @@ cred_high_ode =  apply(params$y_pred[, , 5], 2, quantile, probs = c(0.975))
 
 df_sample =  data.frame(sample_time[,2],  y_obs[,2]) #observed data
 colnames(df_sample) = c("Time", "Viremia")
-#df_fit = data.frame(cred_low, cred_median, cred_high, cred_low_ode, cred_median_ode, cred_high_ode, Time = stan_data_beta$t_pred) #predicted credible interval
+df_fit = data.frame(cred_low, cred_median, cred_high, cred_low_ode, cred_median_ode, cred_high_ode, Time = stan_data_beta$t_pred[,2]) #predicted credible interval
 df_fit = data.frame(cred_low, cred_median, cred_high,  Time = stan_data_beta$t_pred[,2]) #predicted credible interval
 
 
@@ -55,9 +55,9 @@ ggplot(df_sample, aes(x=Time, y=log10(Viremia))) +
   geom_line(data = df_fit, aes(x=Time, y=log10(cred_median)), color = "red") +
   geom_line(data = df_fit, aes(x=Time, y=log10(cred_high)), color = "red", linetype=3) +
   geom_line(data = df_fit, aes(x=Time, y=log10(cred_low)), color = "red", linetype=3) +
- # geom_line(data = df_fit, aes(x=Time, y=log10(cred_median_ode)), color = "blue") +
-#  geom_line(data = df_fit, aes(x=Time, y=log10(cred_high_ode)), color = "blue", linetype=3) +
-#  geom_line(data = df_fit, aes(x=Time, y=log10(cred_low_ode)), color = "blue", linetype=3) +
+  geom_line(data = df_fit, aes(x=Time, y=log10(cred_median_ode)), color = "blue") +
+  geom_line(data = df_fit, aes(x=Time, y=log10(cred_high_ode)), color = "blue", linetype=3) +
+  geom_line(data = df_fit, aes(x=Time, y=log10(cred_low_ode)), color = "blue", linetype=3) +
   # Aesthetics
   labs(x = "Day of illness", y = "log10(Viremia)") +
   scale_x_continuous(limits=c(-3, 8)) #+
@@ -70,7 +70,7 @@ launch_shinystan(fit_model)
 #1. delta patient 1 
 x <- seq(0, to = 30, by = 1)
 delta_prior <- dexp(x, rate = 1/5)
-plot(density(params$delta), xlab = "x", main= "delta")
+plot(density(params$delta[,2]), xlab = "x", main= "delta")
 lines(x, delta_prior, type = "l", col ="red")
 
 #2. std patient 1 (plot is okay)
