@@ -71,7 +71,7 @@ stan_data <- list(J = J,                     #number of patients
                        run_estimation=1)       #switch on likelihood 
 
 # Test / debug the model:                                    
-test <- stan("myModel-hierarchical.stan",
+test <- stan("myModel-fit_upto_beta.stan",
              data = stan_data,
              chains = 1, iter = 100, 
              control = list(adapt_delta = 0.8, max_treedepth = 10)) 
