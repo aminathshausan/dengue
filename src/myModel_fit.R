@@ -32,10 +32,11 @@ for (i in 1:48) {
   t_pred[,i] <- (times_cl1[,i][1]-6):times_cl1[,i][5]
 }
 
-J <- 3                            #number of patients
+J <- 2                            #number of patients
 y_obs <- viremia_cl1[, 1:J]       #observed viremia measurements 
 sample_time <- times_cl1[, 1:J]   #measurement times 
 t_pred <- t_pred[, 1:J]
+is_censored <- is_censored[,1:J]
 
 
 #--------load patient data and extract observed viremia and meaured time (use this for individual patient fits ------------
@@ -60,14 +61,16 @@ stan_data <- list(J = J,                     #number of patients
                   y0 = c(1e8, 0, 0, 0, 1, 1),  #initial state of ode 
                   t0 = -4,                     #starting point of ode 
                   ts = sample_time,           #time points where observed data are collected
-                  t_pred =t_pred,    # time point where predictions are made from ode (in the generated quantities block)
+                  t_pred =t_pred,           # time point where predictions are made from ode (in the generated quantities block)
                   A= 1.4e6,  
                   sigma = 0.5,   
-                  y_hat = y_obs,           #observed data
-                  run_estimation=1)       #switch on likelihood 
+                  y_hat = y_obs,               #observed data
+                  is_censored = is_censored,    #indicator matrix 
+                  L = 357)
+               #   run_estimation=1)       #switch on likelihood 
 
 # Test / debug the model:                                    
-test <- stan("myModel-fit_upto_beta.stan",
+test <- stan("myModel-fit_censored.stan",
              data = stan_data,
              chains = 1, iter = 100, 
              control = list(adapt_delta = 0.8, max_treedepth = 10)) 

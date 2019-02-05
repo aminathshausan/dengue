@@ -36,42 +36,27 @@ J <- 2                            #number of patients
 y_obs <- viremia_cl1[, 1:J]       #observed viremia measurements 
 sample_time <- times_cl1[, 1:J]   #measurement times 
 t_pred <- t_pred[, 1:J]
-
-#---------------use this for individual patient fit----------------------------------------------
-#Use a function to load all patient data and get required patient data
-Load_Patient_Data <- function(RData, env = new.env()){
-  load(RData, env)
-  p_data =  get("p1_data", pos=env) #change p1 to which patient data to select
-  return(p_data)
-}
-p1_data <- Load_Patient_Data('../data/patient_data.RData') #returns required patient data
-rm(Load_Patient_Data) # remove the temporary environment to free up memory
-
-#create a matrix of viremia measurements 
-J <- 2
-y_obs <- matrix(data = c(p1_data$viremia, p2_data$viremia), 5, 2)
-sample_time <- matrix(data = c(p1_data$DOI, p2_data$DOI), 5, 2)
-t_pred <- matrix(data =c(-3:7, -3:7), 11,2)
-#sample_time  =  as.matrix(p_data$DOI)  # viremia measurement times 
-#y_obs =  as.matrix(p_data$viremia)    #viremia measurements
+is_censored <- is_censored[,1:J]
 
 
 #---------Estimating delta, std, gamma, kappa, eta, omega, beta------------
 #(date: 21/12/18)
 stan_data <- list(J = J,                     #number of patients
-                       n_obs = 5,                 #number of observed measurements
-                       n_pred = 11,                #number of predicted measurements (from generated quantities block)
-                       y0 = c(1e8, 0, 0, 0, 1, 1),  #initial state of ode 
-                       t0 = -4,                     #starting point of ode 
-                       ts = sample_time,           #time points where observed data are collected
-                       t_pred =t_pred,    # time point where predictions are made from ode (in the generated quantities block)
-                       A= 1.4e6,  
-                       sigma = 0.5,   
-                       y_hat = y_obs,           #observed data
-                       run_estimation=1)       #switch on likelihood 
+                  n_obs = 5,                 #number of observed measurements
+                  n_pred = 11,                #number of predicted measurements (from generated quantities block)
+                  y0 = c(1e8, 0, 0, 0, 1, 1),  #initial state of ode 
+                  t0 = -4,                     #starting point of ode 
+                  ts = sample_time,           #time points where observed data are collected
+                  t_pred =t_pred,           # time point where predictions are made from ode (in the generated quantities block)
+                  A= 1.4e6,  
+                  sigma = 0.5,   
+                  y_hat = y_obs,               #observed data
+                  is_censored = is_censored,    #indicator matrix 
+                  L = 357)
+#   run_estimation=1)       #switch on likelihood 
 
 # Test / debug the model:                                    
-test <- stan("myModel-fit_upto_beta.stan",
+test <- stan("myModel-hierarchical.stan",
              data = stan_data,
              chains = 1, iter = 100, 
              control = list(adapt_delta = 0.8, max_treedepth = 10)) 
@@ -83,7 +68,7 @@ fit_model = stan(fit = test,
                  refresh = 100,
                  control = list(adapt_delta = 0.8, max_treedepth = 10))
 
-save.image(file = '../results/p1_to_p2_exponential.RData')
+save.image(file = '../results/p1_to_p2_noPool.RData')
 #-------------------------------------------------------
 
 
