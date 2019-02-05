@@ -48,16 +48,18 @@ functions {
 
 data {
     int<lower=1> J;                  //number of patients
-    int<lower=1> n_obs;     //number of observed measurements 
-     real y0[6];        //initial condition of ode
-     real t0;           //initial time 
-     real ts[n_obs, J];    //time points of observed measurements
+    int<lower=1> n_obs;          //number of observed measurements 
+     real y0[6];                  //initial condition of ode
+     real t0;                     //initial time 
+     real ts[n_obs, J];            //time points of observed measurements
      real A;
      real sigma;
      real<lower =0> y_hat[n_obs, J];  //observed viremia measurements only
-     int<lower =1> n_pred;        // number of predicted values from posterior, computed in the generated quantities block 
-    real  t_pred[n_pred, J];        //time span at which posterior predictions are made
-    int<lower=0, upper = 1> run_estimation; // a switch to evaluate the likelihood
+     int<lower =1> n_pred;            // number of predicted values from posterior, computed in the generated quantities block 
+    real  t_pred[n_pred, J];          //time span at which posterior predictions are made
+    int <lower =0, upper =1> is_censored[n_obs, J];  // Indicator matrix: 0 if viremia > LOD, 1 otherwise 
+    real <upper = min(y_hat[,J])> L;                        // censoring point 
+   // int<lower=0, upper = 1> run_estimation; // a switch to evaluate the likelihood
 }
 
 transformed data {
@@ -143,17 +145,22 @@ model {
         //beta ~ exponential(10); //rate =1 and 5 10 gave error in ODE
         
         //evaluate likelihood conditionally. run_estimation =0 switch off likelihood. run_estimation =1 switch on likelihood
-        if(run_estimation==1){
+       // if(run_estimation==1){
           //for each patient data within same cluster, compute likelihood 
             for (j in 1:J){
-                y_hat[,j] ~ lognormal(log(y_new[,j]), std);            //likelihood for observed data
+              for (n in 1:n_obs){
+                if (is_censored[n,j] == 0){
+                   y_hat[n,j] ~ lognormal(log(y_new[n,j]), std);            //likelihood for uncensored observed data
+              } else {
+                target += lognormal_lcdf(L | log(y_new[n,j]), std);          //likelihood of censored data
+              }
            }
         }
 }
 
 generated quantities {
    
-       real y_pred[n_pred, 6];
+        real y_pred[n_pred, 6];
         real y_ppc[n_pred, J];
         
      for (j in 1:J){
