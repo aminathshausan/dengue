@@ -82,8 +82,8 @@ parameters{ //the following parameters are to be estimated
         real eta_raw;
         real omega_raw;
         real beta_raw; 
-     //   real<lower =0> lambda_delta; //population parameter of delta
-    //    real<lower =0> lambda_kappa; //population parameter of kappa
+        real<lower =0> lambda_delta; //population parameter of delta
+        real<lower =0> lambda_kappa; //population parameter of kappa
       //  real<lower =0> lambda_std; //population parameter of std
 }
 
@@ -130,8 +130,8 @@ model {
      // lambda_std ~ exponential(1);   //this also made R session to abort 
       //lambda_std ~ normal(0, 1); //95%CI for lambda_kappa in [0, 0.6] (with this, R session aborted)
       
-     // lambda_delta ~ exponential(0.2); //implies mean of lambda_delta = 1/0.2 =5
-     // lambda_kappa ~ exponential(0.2); 
+      lambda_delta ~ exponential(0.2); //implies mean of lambda_delta = 1/0.2 =5
+      lambda_kappa ~ exponential(0.2); 
       
       //hyper priors 
  //     delta_raw ~ exponential(1/lambda_delta); 
@@ -139,12 +139,13 @@ model {
       
       //priors
       //  delta ~ exponential(1/lambda_delta); //  original delta ~ exponential(0.2);
-        delta ~ exponential(0.2);
+        delta ~ exponential(lambda_delta);
+          
         std ~ exponential(1);
        // std ~ exponential(lambda_std);     //  original std ~ exponential(1);
         gamma ~ exponential(0.2);
     //    kappa ~ exponential(1/lambda_kappa); //  original kappa ~ exponential(0.2);
-        kappa ~ exponential(0.2);
+        kappa ~ exponential(lambda_kappa);
         eta_raw ~ normal(0,1);
         omega_raw ~ normal(0, 1);
         beta_raw ~ normal(0, 1); //original: beta_raw ~normal(0,1)
