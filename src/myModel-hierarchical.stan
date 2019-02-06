@@ -73,12 +73,12 @@ transformed data {
 
 
 parameters{ //the following parameters are to be estimated
-        real<lower =0>  delta[J];      //delta is patient specific
-       // real<lower =0>  delta_raw[J];  //hyper prior for each delta
+       // real<lower =0>  delta[J];      //delta is patient specific
+        real<lower =0>  delta_raw[J];  //hyper prior for each delta
         real<lower = 0> std;           // making std as patient specific made R session to abort
         real<lower = 0> gamma;
-        real<lower = 0> kappa[J];     //patient specific
-       // real<lower = 0> kappa_raw[J]; //hyper prior for each kappa
+       // real<lower = 0> kappa[J];     //patient specific
+        real<lower = 0> kappa_raw[J]; //hyper prior for each kappa
         real eta_raw;
         real omega_raw;
         real beta_raw; 
@@ -93,6 +93,8 @@ transformed parameters {
               real y[n_obs,6];       //output from ODE solver
               real y_new[n_obs, J]; //vector to hold machine precision solutions from ODE (only for viremia measurements) 
               
+              real<lower =0>  delta[J];
+              real<lower = 0> kappa[J];  
               real<lower = 0> beta;
               real<lower = 0> eta;
               real<lower = 0> omega;
@@ -103,7 +105,10 @@ transformed parameters {
               beta  = exp(-24 + 1*beta_raw);
               
               for (j in 1:J){
-              
+              delta[j] = mu_delta + sigma_delta * delta_raw[j];
+              kappa[j] = mu_kappa + sigma_kappa * kappa_raw[j];  
+              }
+              for (j in 1:J){
                   real params[6];
                   params[1] = delta[j];
                   params[2] = gamma;
@@ -126,7 +131,6 @@ transformed parameters {
 
 model {
       //population parameters (hyper priors)
-      //with normal hyper priors for delta and kappa, it took about 43 mins with 2 patients data and many div. transitions
        mu_delta ~ normal(0, 10);        //mean of delta
        sigma_delta ~ exponential(0.2); //standard deviation of delta
        mu_kappa ~ normal(0, 10);        //mean of delta
@@ -137,19 +141,19 @@ model {
      // lambda_delta ~ exponential(0.2); //implies mean of lambda_delta = 1/0.2 =5
      // lambda_kappa ~ exponential(0.2); 
       
-      //hyper priors 
- //     delta_raw ~ exponential(1/lambda_delta); 
-  //    kappa_raw ~ exponential(1/lambda_kappa);
+       
+        delta_raw ~ normal(0,1); 
+        kappa_raw ~ normal(0,1);
       
       //priors
       //  delta ~ exponential(1/lambda_delta); //  original delta ~ exponential(0.2);
-        delta ~ normal(mu_delta, sigma_delta);
+       // delta ~ normal(mu_delta, sigma_delta);
           
         std ~ exponential(1);
        // std ~ exponential(lambda_std);     //  original std ~ exponential(1);
         gamma ~ exponential(0.2);
     //    kappa ~ exponential(1/lambda_kappa); //  original kappa ~ exponential(0.2);
-        kappa ~ normal(mu_kappa, sigma_kappa);
+       // kappa ~ normal(mu_kappa, sigma_kappa);
         eta_raw ~ normal(0,1);
         omega_raw ~ normal(0, 1);
         beta_raw ~ normal(0, 1); //original: beta_raw ~normal(0,1)
@@ -158,6 +162,9 @@ model {
        // if(run_estimation==1){
           //for each patient, compute likelihood 
           for (j in 1:J){
+          //  delta[j] ~ normal(mu_delta, sigma_delta);
+           // kappa[j] ~ normal(mu_kappa, sigma_kappa);
+            
              for (n in 1:n_obs){
                 if (is_censored[n,j] == 0){
                      y_hat[n,j] ~ lognormal(log(y_new[n,j]), std);                //likelihood for observed data
