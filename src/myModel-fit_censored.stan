@@ -49,8 +49,8 @@ functions {
 data {
     int<lower=1> J;                  //number of patients
     int<lower=1> n_obs;          //number of observed measurements 
-     real y0[6];                  //initial condition of ode
-     real t0;                     //initial time 
+    // real y0[6];                  //initial condition of ode (initial viremia estimated)
+     real t0[J];                     //initial time of ODE
      real ts[n_obs, J];            //time points of observed measurements
      real A;
      real sigma;
@@ -58,7 +58,8 @@ data {
      int<lower =1> n_pred;            // number of predicted values from posterior, computed in the generated quantities block 
     real  t_pred[n_pred, J];          //time span at which posterior predictions are made
     int <lower =0, upper =1> is_censored[n_obs, J];  // Indicator matrix: 0 if viremia > LOD, 1 otherwise 
-    real <upper = min(y_hat[,J])> L;                        // censoring point 
+    real  L;                                      // censoring point 
+   // real <upper = min(y_hat[,J])> L;                        // censoring point 
    // int<lower=0, upper = 1> run_estimation; // a switch to evaluate the likelihood
 }
 
@@ -86,12 +87,14 @@ parameters{ //the following parameters are to be estimated
         real eta_raw;
         real omega_raw;
         real beta_raw; 
+        real<lower = 0> V0; // initial concentration of virus
 }
 
 transformed parameters {
               real y[n_obs,6];  //output from ODE solver
              // real y_new[n_obs, 6]; //vector to hold machine precision solutions from ODE
-              real y_new[n_obs, J]; //vector to hold machine precision solutions from ODE 
+              real y_new[n_obs, J]; //vector to hold machine precision solutions from ODE (for only viremia measurements)
+              real y0[6];        //initial condition of ODE
               
               real<lower = 0> beta;
               real<lower = 0> eta;
@@ -106,6 +109,13 @@ transformed parameters {
               omega = exp(9.2 + 1*omega_raw);
               beta  = exp(-24 + 1*beta_raw);
               
+              y0[1] = 1e8;    // initial number of susceptible (uninfected) cells 
+              y0[2] = 0;    // initial number of cells infected with only virus
+              y0[3] = 0;    // initial number of cells infected with only TIPs
+              y0[4] = 0;    // initial number of co-infected cells
+              y0[5] = V0;    // initial concentration of virus particles
+              y0[6] = 0;    // initial concentration of TIPs 
+              
               for (j in 1:J){
                    real params[6];
                         params[1] = delta;
@@ -116,7 +126,7 @@ transformed parameters {
                         params[6] = beta;
               
               //compute solutions only at the observed time points (ts)
-             y = integrate_ode_rk45(ode, y0, t0, ts[,j], params, x_r, x_i, 1e-5, 1e-6, 1e4);  
+             y = integrate_ode_rk45(ode, y0, t0[j], ts[,j], params, x_r, x_i, 1e-5, 1e-6, 1e4);  
                  
             //add machine precision to vector y (only for viremia trajectory)
                for (t in 1:n_obs) {
@@ -143,6 +153,7 @@ model {
         omega_raw ~ normal(0, 1);
          beta_raw ~ normal(0, 1); //original: beta_raw ~normal(0,1)
         //beta ~ exponential(10); //rate =1 and 5 10 gave error in ODE
+        V0 ~ normal(0, 100) ; 
         
         //evaluate likelihood conditionally. run_estimation =0 switch off likelihood. run_estimation =1 switch on likelihood
        // if(run_estimation==1){
@@ -173,7 +184,7 @@ generated quantities {
          params[6] = beta;
       
        //compute predictions including incubation period (t_pred), without measurement variablity
-         y_pred = integrate_ode_rk45(ode, y0, t0, t_pred[,j], params, x_r, x_i, 1e-5, 1e-6, 1e4);
+         y_pred = integrate_ode_rk45(ode, y0, t0[j], t_pred[,j], params, x_r, x_i, 1e-5, 1e-6, 1e4);
      
      //compute predictions using measurement varaiability (std)
       for (t in 1:n_pred) {

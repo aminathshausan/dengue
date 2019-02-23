@@ -47,20 +47,18 @@ functions {
 }
 
 data {
-    int<lower=1> J;                  //number of patients
-    int<lower=1> n_obs;               //number of observed measurements per patient
-     real y0[6];                      //initial condition of ode
-     real t0;                         //initial time 
-     real ts[n_obs, J];               //time points of observed measurements
+    int<lower=1> J;     //number of patients
+    int<lower=1> n_obs; //number of observed measurements per patient
+     real y0[6];        //initial condition of ode
+     real t0;           //initial time 
+     real ts[n_obs, J];    //time points of observed measurements
      real A;
      real sigma;
-    real<lower =0> y_hat[n_obs,J];        //observed viremia measurements only
-    int<lower =1> n_pred;               // number of predicted values from posterior, computed in the generated quantities block 
-    real  t_pred[n_pred,J];                //time span at which posterior predictions are made
-   // int<lower = 0> n_cens;                  //number of censered observations
-    int <lower =0, upper =1> is_censored[n_obs, J];  // Indicator matrix: 0 if viremia > LOD, 1 otherwise 
-     real <upper = min(y_hat[,J])> L;                        // censoring point 
-    //int<lower=0, upper = 1> run_estimation; // a switch to evaluate the likelihood (use this to simulate data from priors)
+    // matrix[n_obs, J] y_hat;  //observed viremia measurements only
+    real<lower =0> y_hat[n_obs,J];  //observed viremia measurements only
+    int<lower =1> n_pred;        // number of predicted values from posterior, computed in the generated quantities block 
+    real  t_pred[n_pred,J];        //time span at which posterior predictions are made
+    int<lower=0, upper = 1> run_estimation; // a switch to evaluate the likelihood
 }
 
 transformed data {
@@ -73,28 +71,23 @@ transformed data {
 
 
 parameters{ //the following parameters are to be estimated
-       // real<lower =0>  delta[J];      //delta is patient specific
+        real<lower =0>  delta[J];      //delta is patient specific
         real<lower =0>  delta_raw[J];  //hyper prior for each delta
         real<lower = 0> std;           // making std as patient specific made R session to abort
         real<lower = 0> gamma;
-       // real<lower = 0> kappa[J];     //patient specific
+        real<lower = 0> kappa[J];     //patient specific
         real<lower = 0> kappa_raw[J]; //hyper prior for each kappa
         real eta_raw;
         real omega_raw;
         real beta_raw; 
-        real<lower =0> mu_delta; //population parameter of delta
-        real<lower =0> sigma_delta; //population parameter of delta
-        real<lower =0> mu_kappa; //population parameter of kappa
-        real<lower =0> sigma_kappa; //population parameter of delta
+        real<lower =0> lambda_delta; //population parameter of delta
+        real<lower =0> lambda_kappa; //population parameter of kappa
       //  real<lower =0> lambda_std; //population parameter of std
 }
 
 transformed parameters {
-              real y[n_obs,6];       //output from ODE solver
-              real y_new[n_obs, J]; //vector to hold machine precision solutions from ODE (only for viremia measurements) 
-              
-              real<lower =0>  delta[J];
-              real<lower = 0> kappa[J];  
+              real y[n_obs,6];  //output from ODE solver
+              real y_new[n_obs, J]; //vector to hold machine precision solutions from ODE 
               real<lower = 0> beta;
               real<lower = 0> eta;
               real<lower = 0> omega;
@@ -105,10 +98,7 @@ transformed parameters {
               beta  = exp(-24 + 1*beta_raw);
               
               for (j in 1:J){
-              delta[j] = mu_delta + sigma_delta * delta_raw[j];
-              kappa[j] = mu_kappa + sigma_kappa * kappa_raw[j];  
-              }
-              for (j in 1:J){
+              
                   real params[6];
                   params[1] = delta[j];
                   params[2] = gamma;
@@ -130,48 +120,37 @@ transformed parameters {
 }
 
 model {
-      //population parameters (hyper priors)
-       mu_delta ~ normal(0, 10);        //mean of delta
-       sigma_delta ~ exponential(0.2); //standard deviation of delta
-       mu_kappa ~ normal(0, 10);        //mean of delta
-       sigma_kappa ~ exponential(0.2); //standard deviation of delta
+      //population parameters
+      //with normal hyper priors for delta and kappa, it took about 43 mins with 2 patients data and many div. transitions
+  //    lambda_delta ~ normal(0, 0.3); //95%CI for lambda_delta in [0, 0.6] 
+  //    lambda_kappa ~ normal(0, 0.3); //95%CI for lambda_kappa in [0, 0.6]
      // lambda_std ~ exponential(1);   //this also made R session to abort 
       //lambda_std ~ normal(0, 1); //95%CI for lambda_kappa in [0, 0.6] (with this, R session aborted)
       
-     // lambda_delta ~ exponential(0.2); //implies mean of lambda_delta = 1/0.2 =5
-     // lambda_kappa ~ exponential(0.2); 
+      lambda_delta ~ exponential(0.2); 
+      lambda_kappa ~ exponential(0.2); 
       
-       
-        delta_raw ~ normal(0,1); 
-        kappa_raw ~ normal(0,1);
+      //hyper priors 
+      delta_raw ~ exponential(lambda_delta); 
+      kappa_raw ~ exponential(lambda_kappa);
       
       //priors
-      //  delta ~ exponential(1/lambda_delta); //  original delta ~ exponential(0.2);
-       // delta ~ normal(mu_delta, sigma_delta);
-          
+        delta ~ exponential(lambda_delta); //  original delta ~ exponential(0.2);
         std ~ exponential(1);
        // std ~ exponential(lambda_std);     //  original std ~ exponential(1);
         gamma ~ exponential(0.2);
-    //    kappa ~ exponential(1/lambda_kappa); //  original kappa ~ exponential(0.2);
-       // kappa ~ normal(mu_kappa, sigma_kappa);
+        kappa ~ exponential(lambda_kappa); //  original kappa ~ exponential(0.2);
         eta_raw ~ normal(0,1);
         omega_raw ~ normal(0, 1);
         beta_raw ~ normal(0, 1); //original: beta_raw ~normal(0,1)
         
         //evaluate likelihood conditionally. run_estimation =0 switch off likelihood. run_estimation =1 switch on likelihood
-       // if(run_estimation==1){
+        if(run_estimation==1){
           //for each patient, compute likelihood 
           for (j in 1:J){
-          //  delta[j] ~ normal(mu_delta, sigma_delta);
-           // kappa[j] ~ normal(mu_kappa, sigma_kappa);
-            
-             for (n in 1:n_obs){
-                if (is_censored[n,j] == 0){
-                     y_hat[n,j] ~ lognormal(log(y_new[n,j]), std);                //likelihood for observed data
-                } else {
-                target += lognormal_lcdf(L | log(y_new[n,j]), std);          //likelihood of censored data
-                       }
-                }
+             y_hat[,j] ~ lognormal(log(y_new[,j]), std);   
+          }
+     //  y_hat ~ lognormal(log(y_new[,5]), std);   
         }
 }
 

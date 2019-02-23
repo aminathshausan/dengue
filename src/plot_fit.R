@@ -11,41 +11,55 @@ rm(list=ls())
 #==================================================================
 #save the packages in this library
 .libPaths("C:/Users/shausan/r-libraries") #use this on qut desktop
-.libPaths("C:/Users/shau/r-libraries") #use this on laptop
+#.libPaths("C:/Users/shau/r-libraries") #use this on laptop
 #---------------------------------------------------------------
 #load required packages 
+library(rstan)
+rstan_options(auto_write = TRUE)
+options(mc.cores = parallel::detectCores())
+
 library("bayesplot")
 library("ggplot2")
 library(dplyr)
 install.packages("shinystan")
+install.packages("httpuv")
 library("shinystan")
 #=======================================================
-#load simulated data, which are computed from prior distribution
-p_fit <- load('p4_upto_beta.RData')
+#load simulated data, 
+p_fit <- load('../results/p1_to_p2_exponential.RData')
 
 #=====================================================================
 #Inference for fit using real data
 
-print(fit_model, pars = c("delta", "std","gamma", "kappa","eta", "omega", "beta", "lp__"), digits=3)
+print(fit_model, pars = c("delta", "std","gamma", "kappa","eta", "omega", "beta", "V0","lp__"), digits=3)
 traceplot(fit_model, pars = c("delta", "std", "gamma", "kappa","eta", "omega", "beta"), inc_warmup =TRUE, nrow=4)
 pairs(fit_model, pars = c("delta","std","gamma", "eta","kappa", "eta", "omega", "beta"), las = 1)
 
 #compute credible interval and plot them for "fake_fit"
 params <- extract(fit_model)
 
-cred_median = apply(params$y_ppc[, ,2], 2, median)
-cred_low =  apply(params$y_ppc[, ,2], 2, quantile, probs = c(0.025))
-cred_high =  apply(params$y_ppc[, ,2], 2, quantile, probs = c(0.975))
+#these corresponds to viremia trajectory with noise
+cred_median = apply(params$y_ppc[, ,10], 2, median)  
+cred_low =  apply(params$y_ppc[, ,10], 2, quantile, probs = c(0.025))
+cred_high =  apply(params$y_ppc[, ,10], 2, quantile, probs = c(0.975))
 
-cred_median_ode = apply(params$y_pred[, , 5], 2, median)
-cred_low_ode=  apply(params$y_pred[, , 5], 2, quantile, probs = c(0.025))
-cred_high_ode =  apply(params$y_pred[, , 5], 2, quantile, probs = c(0.975))
+#these corresponds to viremia trajectory without noise
+cred_median_viremia = apply(params$y_pred_viremia[, , 10], 2, median)
+cred_low_viremia=  apply(params$y_pred_viremia[, , 10], 2, quantile, probs = c(0.025))
+cred_high_viremia =  apply(params$y_pred_viremia[, , 10], 2, quantile, probs = c(0.975))
 
+#these corresponds to TIP trajectory without noise
+cred_median_tips = apply(params$y_pred_TIPs[, , 10], 2, median)
+cred_low_tips=  apply(params$y_pred_TIPs[, , 10], 2, quantile, probs = c(0.025))
+cred_high_tips =  apply(params$y_pred_TIPs[, , 10], 2, quantile, probs = c(0.975))
 
-df_sample =  data.frame(sample_time[,2],  y_obs[,2]) #observed data
+df_sample =  data.frame(sample_time[,10],  y_obs[,10]) #observed data
 colnames(df_sample) = c("Time", "Viremia")
-df_fit = data.frame(cred_low, cred_median, cred_high, cred_low_ode, cred_median_ode, cred_high_ode, Time = stan_data_beta$t_pred[,2]) #predicted credible interval
-df_fit = data.frame(cred_low, cred_median, cred_high,  Time = stan_data_beta$t_pred[,2]) #predicted credible interval
+df_fit = data.frame(cred_low, cred_median, cred_high,
+                    cred_low_viremia, cred_median_viremia, cred_high_viremia, 
+                    cred_low_tips, cred_median_tips, cred_high_tips,
+                    Time = stan_data$t_pred[,10]) #predicted credible interval
+df_fit = data.frame(cred_low, cred_median, cred_high,  Time = stan_data$t_pred[,10]) #predicted credible interval
 
 
 #plot  posterior predictive interval for fake data
@@ -55,12 +69,15 @@ ggplot(df_sample, aes(x=Time, y=log10(Viremia))) +
   geom_line(data = df_fit, aes(x=Time, y=log10(cred_median)), color = "red") +
   geom_line(data = df_fit, aes(x=Time, y=log10(cred_high)), color = "red", linetype=3) +
   geom_line(data = df_fit, aes(x=Time, y=log10(cred_low)), color = "red", linetype=3) +
-  geom_line(data = df_fit, aes(x=Time, y=log10(cred_median_ode)), color = "blue") +
-  geom_line(data = df_fit, aes(x=Time, y=log10(cred_high_ode)), color = "blue", linetype=3) +
-  geom_line(data = df_fit, aes(x=Time, y=log10(cred_low_ode)), color = "blue", linetype=3) +
+  geom_line(data = df_fit, aes(x=Time, y=log10(cred_median_viremia)), color = "blue") +
+  geom_line(data = df_fit, aes(x=Time, y=log10(cred_high_viremia)), color = "blue", linetype=3) +
+  geom_line(data = df_fit, aes(x=Time, y=log10(cred_low_viremia)), color = "blue", linetype=3) +
+  geom_line(data = df_fit, aes(x=Time, y=log10(cred_median_tips)), color = "green") +
+  geom_line(data = df_fit, aes(x=Time, y=log10(cred_high_tips)), color = "green", linetype=3) +
+  geom_line(data = df_fit, aes(x=Time, y=log10(cred_low_tips)), color = "green", linetype=3) +
   # Aesthetics
-  labs(x = "Day of illness", y = "log10(Viremia)") +
-  scale_x_continuous(limits=c(-3, 8)) #+
+  labs(x = "Fever Day", y = "log10(Viremia)")# +
+ # scale_x_continuous(limits=c(-3, 8)) #+
 #scale_y_continuous(limits=c(0,20)) 
 #===========shiny stan plots==============
 launch_shinystan(fit_model)
@@ -70,7 +87,7 @@ launch_shinystan(fit_model)
 #1. delta patient 1 
 x <- seq(0, to = 30, by = 1)
 delta_prior <- dexp(x, rate = 1/5)
-plot(density(params$delta[,2]), xlab = "x", main= "delta")
+plot(density(params$delta[,4]), xlab = "x", main= "delta")
 lines(x, delta_prior, type = "l", col ="red")
 
 #2. std patient 1 (plot is okay)
@@ -131,7 +148,7 @@ ggplot(data  = p1_post, aes(x = delta)) + #patient 1
 # Aesthetics
 labs(x = "delta", y = "density")
 
-#=========plot post density for all patients ==============
+#=========plot post density for all patients (using independent fits) ==============
 #Use a function to extract posterior draws for each parameter
 LoadToEnvironment <- function(RData, env = new.env()){
   load(RData, env)
@@ -168,20 +185,6 @@ ggplot(data  = p1_post, aes(x = delta)) + #patient 1
   geom_density(data = p10_post, color = "coral") + # p10
   # Aesthetics
   labs(x = "delta", y = "density")
-#posterior delta with prior 
-x <- seq(0, to = 30, by = 1)
-delta_prior <- dexp(x, rate = 1/5)
-plot(density(p1_post$delta), xlab = "x", main= "delta", ylim =c(0,0.3))
-lines(density(p2_post$delta), col ="purple")
-lines(density(p3_post$delta), col ="orange")
-lines(density(p4_post$delta), col ="blue")
-lines(density(p5_post$delta), col ="red")
-lines(density(p6_post$delta), col ="green")
-lines(density(p7_post$delta), col ="maroon")
-lines(density(p8_post$delta), col ="brown")
-lines(density(p9_post$delta), col ="azure")
-lines(density(p10_post$delta), col ="coral")
-lines(x, delta_prior, type = "o", col ="red")
 
 #plot posterior density of std for all patients
 ggplot(data  = p1_post, aes(x = std)) + #patient 1
@@ -346,3 +349,70 @@ lines(density(p9_post$beta), col ="azure")
 lines(density(p10_post$beta), col ="coral")
 lines(x_beta, beta_prior, type = "", col ="red")
 #=======================================================================
+#plot posterior densities overlaid using fit for "myModel-fit_censored_noPool.stan"
+#(result of this simulation is saved as "p1_to_p10_noPool_with_V0.RData" under "results' folder)
+#posterior delta with prior 
+x <- seq(0, to = 30, by = 1)
+delta_prior <- dexp(x, rate = 1/5)
+plot(density(params$delta[,1]), xlab = "x", main= "delta", ylim =c(0,0.3))
+lines(density(params$delta[,2]), col ="purple")
+lines(density(params$delta[,3]), col ="orange")
+lines(density(params$delta[,4]), col ="blue")
+lines(density(params$delta[,5]), col ="red")
+lines(density(params$delta[,6]), col ="green")
+lines(density(params$delta[,7]), col ="maroon")
+lines(density(params$delta[,8]), col ="brown")
+lines(density(params$delta[,9]), col ="azure")
+lines(density(params$delta[,10]), col ="coral")
+lines(x, delta_prior, type = "o", col ="red")
+
+#posterior kappa with prior 
+x <- seq(0, to = 30, by = 1)
+kappa_prior <- dexp(x, rate = 1/5)
+plot(density(params$kappa[,1]), xlab = "x", main= "kappa", ylim =c(0,0.3))
+lines(density(params$kappa[,2]), col ="purple")
+lines(density(params$kappa[,3]), col ="orange")
+lines(density(params$kappa[,4]), col ="blue")
+lines(density(params$kappa[,5]), col ="red")
+lines(density(params$kappa[,6]), col ="green")
+lines(density(params$kappa[,7]), col ="maroon")
+lines(density(params$kappa[,8]), col ="brown")
+lines(density(params$kappa[,9]), col ="azure")
+lines(density(params$kappa[,10]), col ="coral")
+lines(x, kappa_prior, type = "o", col ="red")
+
+#posterior std with prior 
+x <- seq(0, to = 30, by = 1)
+std_prior <- dexp(x, rate = 1/1)
+plot(density(params$std[,1]), xlab = "x", main= "std", ylim =c(0,1.5))
+lines(density(params$std[,2]), col ="purple")
+lines(density(params$std[,3]), col ="orange")
+lines(density(params$std[,4]), col ="blue")
+lines(density(params$std[,5]), col ="red")
+lines(density(params$std[,6]), col ="green")
+lines(density(params$std[,7]), col ="maroon")
+lines(density(params$std[,8]), col ="brown")
+lines(density(params$std[,9]), col ="azure")
+lines(density(params$std[,10]), col ="coral")
+lines(x, std_prior, type = "o", col ="red")
+
+#posterior V0 with prior 
+x_V0 <- seq(0, to = 400, by = 50)
+V0_prior <- dnorm(x_v0, mean=0, sd =100)
+plot(density(params$V0[,1]), xlab = "x", main= "Initial Viral load", ylim =c(0,0.03))
+lines(density(params$V0[,2]), col ="purple")
+lines(density(params$V0[,3]), col ="orange")
+lines(density(params$V0[,4]), col ="blue")
+lines(density(params$V0[,5]), col ="red")
+lines(density(params$V0[,6]), col ="green")
+lines(density(params$V0[,7]), col ="maroon")
+lines(density(params$V0[,8]), col ="brown")
+lines(density(params$V0[,9]), col ="azure")
+lines(density(params$V0[,10]), col ="coral")
+lines(x_V0, V0_prior, type = "o", col ="red")
+#lines(x_V0, V0_sigma1, type = "o", col ="blue")
+#lines(x_V0, V0_sigma2, type = "o", col ="green")
+
+#x_V0 <- seq(0, to = 400, by = 50)
+#V0_sigma1 <- dexp(x_v0, rate = 1/10)
+#V0_sigma2 <- dexp(x_v0, rate = 1/5)

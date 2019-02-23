@@ -27,12 +27,7 @@ dataset <- read.csv("../data/daily viremia levels.csv")
 #filter DENV1 data only 
 DENV1_data <- filter(dataset, Serotype == "DENV1")
 
-#plot viral load for each subject (with subject name)
-ggplot(data = DENV1_data)+ 
-  geom_point(mapping = aes(x=DOI, y=log10(viremia) , shape = viremia_sign) , show.legend = FALSE)+
-  facet_wrap(~ StudyNo, ncol=9) 
-
-#plot viral load for each subject (without subject name)
+#plot viral load for each subject 
 qplot(
   DOI,
   log10(viremia),
@@ -84,26 +79,13 @@ subjects_cl1 <- c(603, 604,  607, 610, 615, 616,
                   872, 874, 875, 877, 879, 883, 888) 
 viremia_cl1 <- matrix(data =NA, ncol =length(subjects_cl1), nrow = 5);
 times_cl1 <- matrix(data =NA, ncol =length(subjects_cl1), nrow = 5);
-is_censored <- matrix(data =NA, ncol =length(subjects_cl1), nrow = 5)
-#length(subjects_cl1)
+
 for (i in 1:length(subjects_cl1) ) {
   viremia_cl1[,i] <- filter(DENV1_data, StudyNo == subjects_cl1[i]) %>% select(viremia)  %>% unlist
   times_cl1[,i] <- filter(DENV1_data, StudyNo == subjects_cl1[i]) %>% select(DOI)  %>% unlist
-  is_censored[,i] <- filter(DENV1_data, StudyNo == subjects_cl1[i]) %>% select(viremia_sign)  %>% unlist
-  is_censored[,i] <- ifelse(is_censored[,i] %in% c('1'), 0, 1)
 }
 
-#change values in is_censored matrix so that 1 =0 and 2 =1
-#ifelse(condition, result if TRUE, result if FALSE)
-#is_censored[,1][5] <-2
-#is_censored[,2][1] <-2
-
-#for (i in 1:2){
-#is_censored[,i] <- ifelse(is_censored[,i] %in% c('1'), 0, 1)
-#}
-
 save.image(file = '../data/cluster1_data.RData')
-
 #cl2 = nonlinear profile (=27 subjects)
 subjects_cl2 <- c(605, 618, 622,  624,  631, 
                   633,  639, 646, 647, 650, 
@@ -115,12 +97,9 @@ subjects_cl2 <- c(605, 618, 622,  624,  631,
 
 viremia_cl2 <- matrix(data =NA, ncol =length(subjects_cl2), nrow = 5);
 times_cl2 <- matrix(data =NA, ncol =length(subjects_cl2), nrow = 5);
-is_censored <- matrix(data =NA, ncol =length(subjects_cl2), nrow = 5)
 
 for (i in 1:length(subjects_cl2) ) {
   viremia_cl2[,i] <- filter(DENV1_data, StudyNo == subjects_cl2[i]) %>% select(viremia)  %>% unlist
   times_cl2[,i] <- filter(DENV1_data, StudyNo == subjects_cl2[i]) %>% select(DOI)  %>% unlist
-  is_censored[,i] <- filter(DENV1_data, StudyNo == subjects_cl2[i]) %>% select(viremia_sign)  %>% unlist
-  is_censored[,i] <- ifelse(is_censored[,i] %in% c('1'), 0, 1)
 }
 save.image(file = '../data/cluster2_data.RData')
