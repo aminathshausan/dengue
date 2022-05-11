@@ -9,7 +9,9 @@ To run the codes you will require R(>=3.30) and latest version of RStudio.
 # Directory structure
 
 ├── project
+
 │   ├── data
+
 │   ├── images
 │   ├── results
 │   ├── src
