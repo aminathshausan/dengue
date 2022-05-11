@@ -7,11 +7,9 @@ This repository makes available the source code for the work: "Minimizing severi
 To run the codes you will require R(>=3.30) and latest version of RStudio.
 
 # Directory structure
-
+```
 ├── project
-
 │   ├── data
-
 │   ├── images
 │   ├── results
 │   ├── src
@@ -21,4 +19,4 @@ To run the codes you will require R(>=3.30) and latest version of RStudio.
 │   │   ├── TIPs_therapy.R
 |   |   ├── model_a_sim.stan
 |   |   ├── model_b_sim.stan
-
+```
