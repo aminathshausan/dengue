@@ -20,3 +20,7 @@ To run the codes you will require R(>=3.30) and latest version of RStudio.
 |   |   ├── model_a_sim.stan
 |   |   ├── model_b_sim.stan
 ```
+- The `data` folder contains all preprocessed datasets reqruired to run the codes in the `src` folder. 
+- The `images` folder contains plots generated from the codes in `src` folder.
+- The `results` folder contains all results saved (as .RData format) after runing the codes in the `src` folder.
+- The `src` folder contains all source codes required to produce the results and images.
