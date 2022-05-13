@@ -1,6 +1,6 @@
 # Minimizing severity of dengue serotype 1 infection by transmissible interfering particles
 
-This repository makes available the source code for the work: "Minimizing severity of dengue serotype 1 infection by transmissible interfering particles", available online as an open access preprint on bioRxive: doi: https://doi.org/10.1101/2020.04.21.052936.
+This repository makes available the source code for the work: "Minimizing severity of dengue serotype 1 infection by transmissible interfering particles", available online as an open access preprint on bioRxive: https://papers.ssrn.com/sol3/papers.cfm?abstract_id=4108267.
 
 # Prerequisites
 
