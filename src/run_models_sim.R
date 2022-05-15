@@ -34,15 +34,28 @@ load('../data/DENV1_all.RData') #loads the preprocessed DENV1 data from Nguyen e
 #'is_censored' = indicator matrix for each observation (0=above LOD, 1=below LOD) (5 by 67 matrix)
 #'serology' = indicator matrix for each patients' type (1 = primary, 2 = secondary) (1 by 67 matrix)
 n_patients <- ncol(viremia)
-#t_pred <- matrix(data =NA, ncol =n_patients, nrow = 11); #predicted times
-t_pred <- matrix(data =NA, ncol =n_patients, nrow = 19); #uncomment for Clapham data
+t_pred <- matrix(data =NA, ncol =n_patients, nrow = 11); #predicted times
 t0 <- matrix(data = NA,  ncol = n_patients, nrow =1);   #initial times of ODE
 for (i in 1:n_patients) {
- #t_pred[,i] <- (times[,i][1]-6):times[,i][5]   # IP=6days
-  t_pred[,i] <- (times[,i][1]-6):times[,i][13] #uncomment for Clapham data 
+  t_pred[,i] <- (times[,i][1]-6):times[,i][5]   # IP=6days
   t0[i] <- times[,i][1]-9                       #initial time points of ODE 
 }
 
+####################################################3
+#for Clapham datasets use these matrices
+#round(diff(times),digits =2)  #check difference in time points
+
+n_patients <- ncol(viremia)
+t_pred <- matrix(data =NA, ncol =n_patients, nrow = 25); #uncomment for Clapham data
+t0 <- matrix(data = NA,  ncol = n_patients, nrow =1);   #initial times of ODE
+for (i in 1:n_patients) {
+  t_pred[,i][1:13] <- seq(times[,i][1]-6, times[,i][1], by=0.5)
+  t_pred[,i][14:25] <- times[,i][-c(1)]#times[,1][2]:times[,1][13]
+  t0[i] <- times[,i][1]-9                       #initial time points of ODE 
+}
+
+#round(diff(t_pred),digits =2)
+############################################################
 #2. prepare data for either 'model_a_sim.stan' or 'model_b_sim.stan' program
 J<- n_patients                          #number of patients
 y_obs <- viremia[, 1:J]       #observed viremia measurements 
